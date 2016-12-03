@@ -6,8 +6,8 @@ import subprocess
 
 client_id='2ZMSO5JBG4DR5w'
 client_secret='B4m8XSe2N2V1dcgRM-EY10YWAJ8'
-my_user = 'RaserLay'
-my_password = 'redi.que?'
+my_user = 'reddit_user_name'
+my_password = 'not.my.password'
 user_agent='pc:r_wallpapers_sets_my_wallpaper:0.1 (by /u/RaserLay)'
 
 
