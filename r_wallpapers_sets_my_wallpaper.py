@@ -36,12 +36,13 @@ user_agent=pc:r_wallpapers_sets_my_wallpaper:0.1
 
 '''
 
+
 def get_top_submission(subreddit):
 
 	for submission in subreddit.top(time_filter='day', limit=1):
-		preview = submission.preview
+		#preview = submission.preview
 		title = submission.title.replace(" ", "_").strip(".")
-	url = preview["images"][0]["source"]["url"]
+		url = submission.url
 	return url, title
 
 
@@ -80,3 +81,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+
