@@ -49,8 +49,6 @@ def get_top_submission(subreddit):
 
 def configure_wallpaper_path(title):
 	
-	home_dir = os.path.expanduser('~')
-	wallpapers_dir = os.path.join(home_dir, ".wallpapers")
 	if not os.path.isdir(wallpapers_dir):
 		os.mkdir(wallpapers_dir)
 	wallpaper_path = os.path.join(wallpapers_dir, str(title)+".jpg")
@@ -59,8 +57,9 @@ def configure_wallpaper_path(title):
 
 def download_wallpaper(url, path):
 
-	if urllib.urlopen(str(url)).getcode() == 200:
-		urllib.urlretrieve(str(url), path )
+	if urllib.urlopen(url).getcode() == 200:
+		urllib.urlretrieve(url, path )
+		return urllib.urlopen(url).getcode()
 
 
 def change_local_wallpaper(wallpaper_path):
@@ -85,12 +84,26 @@ def main():
 		url = "http://"+url
 	#elif 'http://i.imgur.com/' or 'https://i.redd.it/' in url: #direct link to image, no imgur page
 
-	download_wallpaper(str(url), wallpaper_path)
-	print "\nDownloaded \"" + title + "\" from " + str(url)
-	change_local_wallpaper(wallpaper_path)
-	print "Set \"" + title + "\" as wallpaper"
+	status_code = download_wallpaper(str(url), wallpaper_path)
+
+	if status_code == 200:
+		print "\nDownloaded \"" + title + "\" from " + str(url)
+		change_local_wallpaper(wallpaper_path)
+		print "Set \"" + title + "\" as wallpaper"
+	else: #change to random wallpaper in wallpapers_folder:
+		wallpaper = random.choice(os.listdir(wallpapers_dir))
+		wallpaper_path = os.path.join(wallpapers_dir, wallpaper)
+		change_local_wallpaper(wallpaper_path)
+		print "Set \"" + title + "\" as wallpaper"
+
 
 
 if __name__ == "__main__":
+
+	home_dir = os.path.expanduser('~')
+	wallpapers_dir = os.path.join(home_dir, ".wallpapers")
+
 	main()
+
+
 
