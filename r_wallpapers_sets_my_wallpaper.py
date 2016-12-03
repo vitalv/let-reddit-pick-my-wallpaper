@@ -5,6 +5,7 @@ import praw
 import urllib
 import os
 import subprocess
+from bs4 import BeautifulSoup
 
 
 '''
@@ -58,9 +59,8 @@ def configure_wallpaper_path(title):
 
 def download_wallpaper(url, path):
 
-	if urllib.urlopen(str(url)).getcode() == "200":
+	if urllib.urlopen(str(url)).getcode() == 200:
 		urllib.urlretrieve(str(url), path )
-		print "Downloaded \"" + title + "\" from " + url + " \nand saved it to " + wallpapers_dir
 
 
 def change_local_wallpaper(wallpaper_path):
@@ -75,8 +75,20 @@ def main():
 	r_wallpapers = reddit.subreddit('wallpapers')
 	url, title = get_top_submission(r_wallpapers)
 	wallpaper_path = configure_wallpaper_path(title)
+	
+	if 'http://imgur.com/a/' in url: #link to imgur album
+		html = urllib.urlopen(url).read()
+		soup = BeautifulSoup(html)
+		matches = soup.find_all('img', attrs={"class": "post-image-placeholder"})
+		#pick first image in album:
+		url = re.search("i.imgur.com/(.+?\")", str(matches[0])).group(0).strip("\"")
+		url = "http://"+url
+	#elif 'http://i.imgur.com/' or 'https://i.redd.it/' in url: #direct link to image, no imgur page
+
 	download_wallpaper(str(url), wallpaper_path)
+	print "\nDownloaded \"" + title + "\" from " + str(url)
 	change_local_wallpaper(wallpaper_path)
+	print "Set \"" + title + "\" as wallpaper"
 
 
 if __name__ == "__main__":
