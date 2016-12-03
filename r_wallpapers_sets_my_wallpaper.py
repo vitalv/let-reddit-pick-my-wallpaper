@@ -4,12 +4,16 @@ import os
 import subprocess
 
 
+'''
+The praw.Reddit connection requires these:
+
 client_id='2ZMSO5JBG4DR5w'
 client_secret='B4m8XSe2N2V1dcgRM-EY10YWAJ8'
 my_user = 'reddit_user_name'
 my_password = 'not.my.password'
-user_agent='pc:r_wallpapers_sets_my_wallpaper:0.1 (by /u/RaserLay)'
+user_agent='pc:r_wallpapers_sets_my_wallpaper:0.1 '
 
+1 either provide them here, or in a praw.ini file residing in the same directory
 
 reddit = praw.Reddit(client_id=client_id,
 					client_secret=client_secret,
@@ -17,6 +21,19 @@ reddit = praw.Reddit(client_id=client_id,
 					user_agent=user_agent,
 					username=my_user)
 
+
+2 or read required parameters from praw.ini under [user_data] 
+
+[user_data]
+client_id=2ZMSO5JBG4DR5w
+client_secret=B4m8XSe2N2V1dcgRM-EY10YWAJ8
+username=redit_user_name
+password=not.my.password
+user_agent=pc:r_wallpapers_sets_my_wallpaper:0.1
+
+'''
+
+reddit = praw.Reddit('user_data')
 
 r_wallpapers = reddit.subreddit('wallpapers')
 
