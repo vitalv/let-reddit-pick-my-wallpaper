@@ -12,13 +12,16 @@ and sets it to local desktop using :
 
 gsettings set org.gnome.desktop.background picture-uri file:///home/username/.wallpapers/downloadedwallpaper.jpg
 
-Make it run at startup by creating mystartupscript.conf:
+Make it run at startup :  
 
-start on runlevel [2345]
-stop on runlevel [!2345]
+-copy praw.ini file to ~/.config/
 
-exec /path/to/script.py
+-Add it to Startup Applications 
+
+or
+
+-Add it as a cron task:
+crontab -e
+@reboot python /home/vital/let-reddit-pick-my-wallpaper/r_wallpapers_sets_my_wallpaper.py &
 
 
-and place it under /etc/init (Use /etc/systemd in Ubuntu 15.x)
-manual starting/stopping can be done with sudo service mystartupscript start and sudo service mystartupscript stop
