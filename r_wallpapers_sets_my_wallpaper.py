@@ -151,6 +151,7 @@ def main():
 		print "\nDownloaded \"" + title + "\" from " + str(url)
 
 	else: #change to random wallpaper in wallpapers_folder:
+		print "\nCould not download image. Resolution not suitable for screen or could not find image. Pick random wallpaper"
 		wallpaper = random.choice(os.listdir(wallpapers_dir))
 		wallpaper_path = os.path.join(wallpapers_dir, wallpaper)
 		title = wallpaper
