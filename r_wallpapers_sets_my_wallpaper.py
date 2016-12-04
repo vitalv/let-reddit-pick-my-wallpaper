@@ -39,9 +39,9 @@ user_agent=pc:r_wallpapers_sets_my_wallpaper:0.1
 '''
 
 
-def get_top_submission(subreddit):
+def get_top_submission(subreddit, time, limit):
 
-	for submission in subreddit.top(time_filter='day', limit=1):
+	for submission in subreddit.top(time_filter=time, limit=limit):
 		title = submission.title
 		url = submission.url
 	return url, title
@@ -64,17 +64,17 @@ def check_img_fits_screen(original_title):
 	by comparing to local screen dimensions
 	'''
 	
-	img_resolution = re.search("\[\d+?[*xX]\d+?\]", original_title).group(0)
+	img_resolution = re.search("\[\d+?[ ]?[*xX][ ]?\d+?\]", original_title).group(0)
 	w_by_h = re.compile("[*xX]").split(img_resolution)
 	img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
 	screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
 	screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
 	screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
 	#check if width/height ratios of img and screen are very different:
-	if ((screen_w + .0) / screen_h) - ((img_w + .0) / img_h) > 0.3:
+	if ((screen_w + .0) / screen_h) - ((img_w + .0) / img_h) < 0.5:
+		return True
+	else:
 		return False
-
-
 
 
 def get_imgur_image_url(url):
@@ -118,16 +118,26 @@ def main():
 	reddit = praw.Reddit('user_data')
 	subreddit = reddit.subreddit('EarthPorn')#wallpapers
 	
-	url, original_title = get_top_submission(subreddit)
-	title = original_title.replace(" ", "_").strip(".")[0:30]#some titles are too long
-	
-	wallpaper_path = configure_wallpaper_path(title)
+	time = 'day'
+	limit = 1
+	url, original_title = get_top_submission(subreddit, time, limit)
 
 	
 	img_fits_screen = True #assume by default . also assume images are large enough
 	#check only if subreddit is EarthPorn bc uses resolution from title which is rules for this subreddit
 	if subreddit.display_name == 'EarthPorn':
 		img_fits_screen = check_img_fits_screen(original_title)
+
+	if img_fits_screen == False:
+		limit = 2
+		url, original_title = get_top_submission(subreddit, time, limit)
+		img_fits_screen = check_img_fits_screen(original_title)
+
+
+	title = original_title.replace(" ", "_").strip(".")[0:30]#some titles are too long
+	
+	wallpaper_path = configure_wallpaper_path(title)
+
 
 
 	if 'imgur.com' in url and not 'i.imgur.com/' in url:
