@@ -7,7 +7,7 @@ Requires to install praw :
 pip install praw
 
 Creates a .wallpapers directory under home folder  
-downloads top scoring (last 24hrs) wallpaper from https://www.reddit.com/r/wallpapers/  
+downloads top scoring (last 24hrs) wallpaper from https://www.reddit.com/r/EarthPorn/  
 and sets it to local desktop using : 
 
 gsettings set org.gnome.desktop.background picture-uri file:///home/username/.wallpapers/downloadedwallpaper.jpg
