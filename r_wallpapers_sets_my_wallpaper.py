@@ -63,19 +63,20 @@ def check_img_fits_screen(original_title):
 	checks the image is more or less rectangular (width/height ratio) to be used as wallpaper
 	by comparing to local screen dimensions
 	'''
-	
-	img_resolution = re.search("\[\d+?[ ]?[*xX][ ]?\d+?\]", original_title).group(0)
-	w_by_h = re.compile("[*xX]").split(img_resolution)
-	img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
-	screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
-	screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
-	screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
-	#check if width/height ratios of img and screen are very different:
-	if ((screen_w + .0) / screen_h) - ((img_w + .0) / img_h) < 0.5:
-		return True
-	else:
+	try: 
+		img_resolution = re.search("\[\d+?[ ]?[*xX][ ]?\d+?\]", original_title).group(0)
+		w_by_h = re.compile("[*xX]").split(img_resolution)
+		img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
+		screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
+		screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
+		screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
+		#check if width/height ratios of img and screen are very different:
+		if ((screen_w + .0) / screen_h) - ((img_w + .0) / img_h) < 0.5:
+			return True
+		else:
+			return False
+	except AttributeError: #'NoneType' object has no attribute 'group' when original title doesnt comply
 		return False
-
 
 def get_imgur_image_url(url):
 
@@ -128,6 +129,7 @@ def main():
 	if subreddit.display_name == 'EarthPorn':
 		img_fits_screen = check_img_fits_screen(original_title)
 
+	#go for second submission if first image does not fit the screen
 	if img_fits_screen == False:
 		limit = 2
 		url, original_title = get_top_submission(subreddit, time, limit)
