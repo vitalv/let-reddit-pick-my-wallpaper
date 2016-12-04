@@ -78,6 +78,8 @@ def check_img_fits_screen(original_title):
 	except AttributeError: #'NoneType' object has no attribute 'group' when original title doesnt comply
 		return False
 
+
+
 def get_imgur_image_url(url):
 
 	'''
@@ -112,6 +114,12 @@ def change_local_wallpaper(wallpaper_path):
 	subprocess.call(change_wallpaper_cmd, shell=True)
 
 
+def pick_random_wallpaper():
+
+	wallpaper = random.choice(os.listdir(wallpapers_dir))
+	wallpaper_path = os.path.join(wallpapers_dir, wallpaper)
+	return wallpaper_path, wallpaper
+
 
 
 def main():
@@ -141,7 +149,6 @@ def main():
 	wallpaper_path = configure_wallpaper_path(title)
 
 
-
 	if 'imgur.com' in url and not 'i.imgur.com/' in url:
 		url = get_imgur_image_url(url)
 
@@ -151,10 +158,9 @@ def main():
 		print "\nDownloaded \"" + title + "\" from " + str(url)
 
 	else: #change to random wallpaper in wallpapers_folder:
+		wallpaper_path, title = pick_random_wallpaper()
 		print "\nCould not download image. Resolution not suitable for screen or could not find image. Pick random wallpaper"
-		wallpaper = random.choice(os.listdir(wallpapers_dir))
-		wallpaper_path = os.path.join(wallpapers_dir, wallpaper)
-		title = wallpaper
+
 
 	change_local_wallpaper(wallpaper_path)
 	print "Set \"" + title + "\" as wallpaper"
