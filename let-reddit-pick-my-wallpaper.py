@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import argparse
 import praw
 import urllib
 import os
@@ -8,6 +9,7 @@ import subprocess
 from bs4 import BeautifulSoup
 import re
 import random
+
 
 '''
 The praw.Reddit connection requires these:
@@ -124,11 +126,36 @@ def pick_random_wallpaper():
 
 def main():
 
-	reddit = praw.Reddit('user_data')
-	subreddit = reddit.subreddit('EarthPorn')#wallpapers
+
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
+	parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
+
+	args = parser.parse_args()
 	
-	time = 'day'
+	subreddit = args.subreddit
+	time = args.target_mzid
+	
+
+
+	if not os.path.isfile(msgfp_file):
+		print "\nMSGF+ search result file not found: %s " % msgfp_file + "\n"
+	if not os.path.isfile(target_mzid_file):
+		print "\nTarget mzid file not found: %s " % target_mzid_file + "\n"
+	if not os.path.isfile(decoy_mzid_file):
+		print "\Decoy mzid file not found: %s " % decoy_mzid_file + "\n"
+
+
+
+	reddit = praw.Reddit('user_data')
+	
+	#get these as arguments
+	#subreddit = reddit.subreddit('EarthPorn')#wallpapers
+	#time = 'day'
+	
 	limit = 1
+	
 	url, original_title = get_top_submission(subreddit, time, limit)
 
 	
