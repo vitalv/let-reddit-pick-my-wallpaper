@@ -11,6 +11,11 @@ import re
 import random
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
+parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
+
+
 '''
 The praw.Reddit connection requires these:
 
@@ -111,9 +116,19 @@ def download_wallpaper(url, path):
 
 
 def change_local_wallpaper(wallpaper_path):
-	
-	change_wallpaper_cmd = "gsettings set org.gnome.desktop.background picture-uri file://" + wallpaper_path
-	subprocess.call(change_wallpaper_cmd, shell=True)
+
+	'''
+	runs 
+		gsettings set org.gnome.desktop.background picture-uri file://" + wallpaper_path
+	'''
+
+	file = 'file://%s'%wallpaper_path
+	p = subprocess.Popen(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file], stderr=subprocess.PIPE)
+	err = p.communicate()[1]
+	if "GLib-GIO-Message: Using the 'memory' GSettings backend" in err:
+		p = subprocess.Popen(['dconf', 'write', '/org/gnome/desktop/background/picture-uri', "\"%s\""%file], stderr=subprocess.PIPE)
+		err = p.communicate()
+
 
 
 def pick_random_wallpaper():
@@ -127,35 +142,17 @@ def pick_random_wallpaper():
 def main():
 
 
-
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
-	parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
-
-	args = parser.parse_args()
-	
-	subreddit = args.subreddit
-	time = args.target_mzid
-	
-
-
-	if not os.path.isfile(msgfp_file):
-		print "\nMSGF+ search result file not found: %s " % msgfp_file + "\n"
-	if not os.path.isfile(target_mzid_file):
-		print "\nTarget mzid file not found: %s " % target_mzid_file + "\n"
-	if not os.path.isfile(decoy_mzid_file):
-		print "\Decoy mzid file not found: %s " % decoy_mzid_file + "\n"
-
-
+	subreddit_arg = args.subreddit
+	#subreddit_arg = 'EarthPorn'
+	time = args.top
+	#time = 'day'
 
 	reddit = praw.Reddit('user_data')
 	
-	#get these as arguments
-	#subreddit = reddit.subreddit('EarthPorn')#wallpapers
-	#time = 'day'
-	
+	subreddit = reddit.subreddit(subreddit_arg)
+
 	limit = 1
-	
+
 	url, original_title = get_top_submission(subreddit, time, limit)
 
 	
@@ -197,6 +194,8 @@ def main():
 
 
 if __name__ == "__main__":
+
+	args = parser.parse_args()
 
 	home_dir = os.path.expanduser('~')
 	wallpapers_dir = os.path.join(home_dir, ".wallpapers")
