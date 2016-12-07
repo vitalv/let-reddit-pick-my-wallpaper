@@ -90,16 +90,15 @@ def check_img_fits_screen(original_title):
 def get_imgur_image_url(url):
 
 	'''
-	works either for imgur.com/a/ (album) or just a regular imgur page with just one picture
-	in the first case just grabs url for first picture in the album
+	works either for imgur.com/a/ (album) or just a regular imgur page with just one picture imgur.com/something
+	in the first case just grabs url for first picture in the album, otherwise grabs 'the' image url
 	'''
 	html = urllib.urlopen(url).read()
 	soup = BeautifulSoup(html)
 	matches = soup.find_all('img', attrs={"class": "post-image-placeholder"})
 	#pick first image in album:
 	url = re.search("i.imgur.com/(.+?\")", str(matches[0])).group(0).strip("\"")
-	url = "http://"+url
-	return url
+	return  "http://"+url
 
 
 
@@ -120,6 +119,7 @@ def change_local_wallpaper(wallpaper_path):
 	'''
 	runs 
 		gsettings set org.gnome.desktop.background picture-uri file://" + wallpaper_path
+		or dconf write if gsettings gives the dreaded "GLib-GIO-Message: Using the 'memory' GSettings backend" error message
 	'''
 
 	file = 'file://%s'%wallpaper_path
@@ -127,7 +127,7 @@ def change_local_wallpaper(wallpaper_path):
 	err = p.communicate()[1]
 	if "GLib-GIO-Message: Using the 'memory' GSettings backend" in err:
 		p = subprocess.Popen(['dconf', 'write', '/org/gnome/desktop/background/picture-uri', "\"%s\""%file], stderr=subprocess.PIPE)
-		err = p.communicate()
+		out, err = p.communicate()
 
 
 
@@ -142,54 +142,43 @@ def pick_random_wallpaper():
 def main():
 
 
-	subreddit_arg = args.subreddit
-	#subreddit_arg = 'EarthPorn'
-	time = args.top
-	#time = 'day'
-
-	reddit = praw.Reddit('user_data')
-	
+	subreddit_arg = args.subreddit #subreddit_arg = 'EarthPorn'
+	time = args.top	#time = 'day'
+	reddit = praw.Reddit('user_data')	
 	subreddit = reddit.subreddit(subreddit_arg)
-
 	limit = 1
 
 	url, original_title = get_top_submission(subreddit, time, limit)
 
-	
 	img_fits_screen = True #assume by default . also assume images are large enough
-	#check only if subreddit is EarthPorn bc uses resolution from title which is rules for this subreddit
+	#check only if subreddit is EarthPorn bc function uses resolution from title which is rules for this subreddit
+	#and because if subreddit is wallpapers I assume the images are kind of suitable already
 	if subreddit.display_name == 'EarthPorn':
 		img_fits_screen = check_img_fits_screen(original_title)
 
-	#go for second submission if first image does not fit the screen
-	if img_fits_screen == False:
+	if img_fits_screen == False:#go for second submission if first image does not fit the screen
 		limit = 2
 		url, original_title = get_top_submission(subreddit, time, limit)
 		img_fits_screen = check_img_fits_screen(original_title)
-
 
 	title = original_title.replace(" ", "_").strip(".")[0:30]#some titles are too long
 	
 	wallpaper_path = configure_wallpaper_path(title)
 
-
-	if 'imgur.com' in url and not 'i.imgur.com/' in url:
-		url = get_imgur_image_url(url)
-
-	#elif 'http://i.imgur.com/' or 'https://i.redd.it/' in url: #direct link to image, no imgur page
-
-	#if img_fits_screen == True and download_wallpaper(str(url), wallpaper_path):
-		#print "\nDownloaded \"" + title + "\" from " + str(url)
+	if 'imgur.com' in url and not 'i.imgur.com/' in url: #i.imgur.com/ and i.redd.it/ are images, not html
+		if 'html' in urllib.urlopen(url).read():
+			url = get_imgur_image_url(url)
+		
 	if img_fits_screen == True:
 		download_wallpaper(str(url), wallpaper_path)
+		print "\nDownloaded \"" + title + "\" from " + str(url)
 
 	else: #change to random wallpaper in wallpapers_folder:
 		wallpaper_path, title = pick_random_wallpaper()
-		#print "\nCould not download image. Resolution not suitable for screen or could not find image. Pick random wallpaper"
-
+		print "\nCould not download image. Resolution not suitable for screen or could not find image. Pick random wallpaper"
 
 	change_local_wallpaper(wallpaper_path)
-	#print "Set \"" + title + "\" as wallpaper"
+	print "Set \"" + title + "\" as wallpaper"
 
 
 
