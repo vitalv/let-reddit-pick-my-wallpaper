@@ -80,7 +80,7 @@ def check_img_fits_screen(original_title):
 		#check if width/height ratios of img and screen are very different:
 		ratio_screen = (screen_w + .0) / screen_h
 		ratio_img = (img_w + .0) / img_h
-		if (screen_w - img_w > 200) and (ratio_screen - ratio_img < 0.5):
+		if (screen_w - img_w < 200) and (ratio_screen - ratio_img < 0.5):
 			return True
 		else:
 			return False
