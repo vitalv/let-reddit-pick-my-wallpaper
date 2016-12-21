@@ -78,7 +78,9 @@ def check_img_fits_screen(original_title):
 		screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
 		screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
 		#check if width/height ratios of img and screen are very different:
-		if ((screen_w + .0) / screen_h) - ((img_w + .0) / img_h) < 0.5:
+		ratio_screen = (screen_w + .0) / screen_h
+		ratio_img = (img_w + .0) / img_h
+		if (screen_w - img_w > 200) and (ratio_screen - ratio_img < 0.5):
 			return True
 		else:
 			return False
@@ -144,7 +146,7 @@ def main():
 
 	subreddit_arg = args.subreddit #subreddit_arg = 'EarthPorn'
 	time = args.top	#time = 'day'
-	reddit = praw.Reddit('user_data')	
+	reddit = praw.Reddit('user_data')
 	subreddit = reddit.subreddit(subreddit_arg)
 	limit = 1
 
@@ -175,7 +177,7 @@ def main():
 
 	else: #change to random wallpaper in wallpapers_folder:
 		wallpaper_path, title = pick_random_wallpaper()
-		print "\nCould not download image. Resolution not suitable for screen or could not find image. Pick random wallpaper"
+		print "\nCould not download image. Resolution and/or ratio not suitable for screen or could not find image. Pick random wallpaper"
 
 	change_local_wallpaper(wallpaper_path)
 	print "Set \"" + title + "\" as wallpaper"
