@@ -71,6 +71,7 @@ def check_img_fits_screen(original_title):
 	by comparing to local screen dimensions
 	'''
 	try: 
+		original_title = original_title.replace(",", '').replace(".",'') #remove all "," and "." from title
 		img_resolution = re.search("\[\d+?[ ]?[*xX][ ]?\d+?\]", original_title).group(0)
 		w_by_h = re.compile("[*xX]").split(img_resolution)
 		img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
