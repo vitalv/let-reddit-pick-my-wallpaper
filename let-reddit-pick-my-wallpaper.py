@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -9,12 +9,7 @@ import subprocess
 from bs4 import BeautifulSoup
 import re
 import random
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
-parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
-
+import sys
 
 '''
 The praw.Reddit connection requires these:
@@ -46,6 +41,20 @@ user_agent=pc:r_wallpapers_sets_my_wallpaper:0.1
 '''
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
+parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
+
+screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
+screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
+screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
+ratio_screen = (screen_w + .0) / screen_h
+
+home_dir = os.path.expanduser('~')
+wallpapers_dir = os.path.join(home_dir, ".wallpapers")
+
+
+
 def get_top_submission(subreddit, time, limit):
 
 	for submission in subreddit.top(time_filter=time, limit=limit):
@@ -69,17 +78,14 @@ def check_img_fits_screen(original_title):
 	'''
 	checks the image is more or less rectangular (width/height ratio) to be used as wallpaper
 	by comparing to local screen dimensions
+	Uses the original title, bc it's subreddit rules to include image resolution
 	'''
 	try: 
 		original_title = original_title.replace(",", '').replace(".",'') #remove all "," and "." from title
-		img_resolution = re.search("\[\d+?[ ]?[*xX][ ]?\d+?\]", original_title).group(0)
+		pattern = "[\[\(]\d+?[ ]?[*xX][ ]?\d+?[\]\)]"
+		img_resolution = re.search(pattern, original_title).group(0)
 		w_by_h = re.compile("[*xX]").split(img_resolution)
 		img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
-		screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
-		screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
-		screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
-		#check if width/height ratios of img and screen are very different:
-		ratio_screen = (screen_w + .0) / screen_h
 		ratio_img = (img_w + .0) / img_h
 		if (screen_w - img_w < 200) and (ratio_screen - ratio_img < 0.5):
 			return True
@@ -97,7 +103,7 @@ def get_imgur_image_url(url):
 	in the first case just grabs url for first picture in the album, otherwise grabs 'the' image url
 	'''
 	html = urllib.urlopen(url).read()
-	soup = BeautifulSoup(html)
+	soup = BeautifulSoup(html, "lxml")
 	matches = soup.find_all('img', attrs={"class": "post-image-placeholder"})
 	#pick first image in album:
 	url = re.search("i.imgur.com/(.+?\")", str(matches[0])).group(0).strip("\"")
@@ -144,53 +150,45 @@ def pick_random_wallpaper():
 
 def main():
 
-
 	subreddit_arg = args.subreddit #subreddit_arg = 'EarthPorn'
+
+	if subreddit_arg.lower() not in ["wallpapers", "earthporn"]:
+		sys.exit('supported subreddits: wallpapers, EarthPorn')
+
 	time = args.top	#time = 'day'
 	reddit = praw.Reddit('user_data')
-	subreddit = reddit.subreddit(subreddit_arg)
-	limit = 1
+	limit=1
 
+	subreddit = reddit.subreddit(subreddit_arg)
 	url, original_title = get_top_submission(subreddit, time, limit)
 
-	img_fits_screen = True #assume by default . also assume images are large enough
-	#check only if subreddit is EarthPorn bc function uses resolution from title which is rules for this subreddit
-	#and because if subreddit is wallpapers I assume the images are kind of suitable already
-	if subreddit.display_name == 'EarthPorn':
-		img_fits_screen = check_img_fits_screen(original_title)
-
-	if img_fits_screen == False:#go for second submission if first image does not fit the screen
-		limit = 2
+	img_fits_screen = check_img_fits_screen(original_title)
+	
+	while img_fits_screen == False:
+		limit+=1
 		url, original_title = get_top_submission(subreddit, time, limit)
 		img_fits_screen = check_img_fits_screen(original_title)
 
-	title = original_title.replace(" ", "_").strip(".")[0:30]#some titles are too long
+	short_title = original_title.replace(" ", "_").strip(".")[0:30]
+	short_title = ''.join([i if ord(i) < 128 else '?' for i in short_title]) #replace non-ascii for '?'
 	
-	wallpaper_path = configure_wallpaper_path(title)
+	wallpaper_path = configure_wallpaper_path(short_title)
 
 	if 'imgur.com' in url and not 'i.imgur.com/' in url: #i.imgur.com/ and i.redd.it/ are images, not html
 		if 'html' in urllib.urlopen(url).read():
 			url = get_imgur_image_url(url)
 		
-	if img_fits_screen == True:
-		download_wallpaper(str(url), wallpaper_path)
-		print "\nDownloaded \"" + title + "\" from " + str(url)
-
-	else: #change to random wallpaper in wallpapers_folder:
-		wallpaper_path, title = pick_random_wallpaper()
-		print "\nCould not download image. Resolution and/or ratio not suitable for screen or could not find image. Pick random wallpaper"
+	if download_wallpaper(str(url), wallpaper_path):
+		print "\nDownloaded \"" + short_title + "\" from " + str(url)
 
 	change_local_wallpaper(wallpaper_path)
-	print "Set \"" + title + "\" as wallpaper"
+	print "Set \"" + short_title + "\" as wallpaper"
 
 
 
 if __name__ == "__main__":
 
 	args = parser.parse_args()
-
-	home_dir = os.path.expanduser('~')
-	wallpapers_dir = os.path.join(home_dir, ".wallpapers")
 
 	main()
 
