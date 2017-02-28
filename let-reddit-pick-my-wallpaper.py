@@ -50,7 +50,7 @@ wallpapers_dir = os.path.join(home_dir, ".wallpapers")
 
 
 
-def get_top_submission(subreddit, time, limit):
+def get_submission(subreddit, time, limit):
 
 	for submission in subreddit.top(time_filter=time, limit=limit):
 		title = submission.title
@@ -93,8 +93,8 @@ def check_img_fits_screen(original_title, screen_dimensions):
 		screen_w, screen_h = screen_dimensions[0], screen_dimensions[1]
 		original_title = original_title.replace(",", '').replace(".",'') #remove all "," and "." from title
 		pattern = "[\[\(]\d+?[ ]?[*xX][ ]?\d+?[\]\)]"
-		img_resolution = re.search(pattern, original_title).group(0)
-		w_by_h = re.compile("[*xX]").split(img_resolution)
+		img_dimensions = re.search(pattern, original_title).group(0)
+		w_by_h = re.compile("[*xX]").split(img_dimensions)
 		img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
 		ratio_img = (img_w + .0) / img_h
 		ratio_screen = (screen_w + .0) / screen_h
@@ -165,7 +165,7 @@ def main():
 	limit=1
 
 	subreddit = reddit.subreddit(subreddit_arg)
-	url, original_title = get_top_submission(subreddit, time, limit)
+	url, original_title = get_submission(subreddit, time, limit)
 
 	screen_dimensions = get_screen_dimensions()
 
@@ -173,7 +173,7 @@ def main():
 	
 	while img_fits_screen == False:
 		limit+=1
-		url, original_title = get_top_submission(subreddit, time, limit)
+		url, original_title = get_submission(subreddit, time, limit)
 		img_fits_screen = check_img_fits_screen(original_title, screen_dimensions)
 
 	short_title = original_title.replace(" ", "_").strip(".")[0:30]
