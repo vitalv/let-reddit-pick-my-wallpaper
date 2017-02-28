@@ -8,7 +8,6 @@ import os
 import subprocess
 from bs4 import BeautifulSoup
 import re
-import random
 import sys
 
 '''
@@ -45,10 +44,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--subreddit", required=True, help="name of the subreddit to fetch image from. E.g: 'wallpapers' or 'EarthPorn'")
 parser.add_argument("--top", required=True, help="subreddit Top time-limit submission: 'day', 'week', 'year'")
 
-screen_dim = subprocess.Popen("xdpyinfo | grep dimensions", shell=True, stdout=subprocess.PIPE).stdout.read()
-screen_dim = re.search("\d+?x\d+? ", screen_dim).group(0).strip(" ")
-screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
-ratio_screen = (screen_w + .0) / screen_h
 
 home_dir = os.path.expanduser('~')
 wallpapers_dir = os.path.join(home_dir, ".wallpapers")
@@ -64,6 +59,7 @@ def get_top_submission(subreddit, time, limit):
 
 
 
+
 def configure_wallpaper_path(title):
 	
 	if not os.path.isdir(wallpapers_dir):
@@ -73,7 +69,20 @@ def configure_wallpaper_path(title):
 
 
 
-def check_img_fits_screen(original_title):
+def get_screen_dimensions(): #sys.stdout.isatty() -> True if executed from console, False if executed from cron
+	
+	'''
+	runs xrandr to get screen dimension from console call. Can't get it to work when executed from cron (Is it even possible?)
+	since cron is not tty-based so I can't capture stdout from xrandr call.
+	Just provide an argument file with screen dimensions when executing from cron?
+	'''
+	screen_dim = subprocess.Popen("xrandr | grep \* | awk '/x/{print $1}'", shell=True, stdout=subprocess.PIPE).stdout.read().strip("\n")
+	screen_w, screen_h = int(screen_dim.split("x")[0]), int(screen_dim.split("x")[1])
+	return (screen_w, screen_h)
+
+
+
+def check_img_fits_screen(original_title, screen_dimensions):
 
 	'''
 	checks the image is more or less rectangular (width/height ratio) to be used as wallpaper
@@ -81,12 +90,14 @@ def check_img_fits_screen(original_title):
 	Uses the original title, bc it's subreddit rules to include image resolution
 	'''
 	try: 
+		screen_w, screen_h = screen_dimensions[0], screen_dimensions[1]
 		original_title = original_title.replace(",", '').replace(".",'') #remove all "," and "." from title
 		pattern = "[\[\(]\d+?[ ]?[*xX][ ]?\d+?[\]\)]"
 		img_resolution = re.search(pattern, original_title).group(0)
 		w_by_h = re.compile("[*xX]").split(img_resolution)
 		img_w, img_h = int(w_by_h[0][1:]), int(w_by_h[1][:-1])
 		ratio_img = (img_w + .0) / img_h
+		ratio_screen = (screen_w + .0) / screen_h
 		if (screen_w - img_w < 200) and (ratio_screen - ratio_img < 0.5):
 			return True
 		else:
@@ -140,12 +151,6 @@ def change_local_wallpaper(wallpaper_path):
 
 
 
-def pick_random_wallpaper():
-
-	wallpaper = random.choice(os.listdir(wallpapers_dir))
-	wallpaper_path = os.path.join(wallpapers_dir, wallpaper)
-	return wallpaper_path, wallpaper
-
 
 
 def main():
@@ -162,12 +167,14 @@ def main():
 	subreddit = reddit.subreddit(subreddit_arg)
 	url, original_title = get_top_submission(subreddit, time, limit)
 
-	img_fits_screen = check_img_fits_screen(original_title)
+	screen_dimensions = get_screen_dimensions()
+
+	img_fits_screen = check_img_fits_screen(original_title, screen_dimensions)
 	
 	while img_fits_screen == False:
 		limit+=1
 		url, original_title = get_top_submission(subreddit, time, limit)
-		img_fits_screen = check_img_fits_screen(original_title)
+		img_fits_screen = check_img_fits_screen(original_title, screen_dimensions)
 
 	short_title = original_title.replace(" ", "_").strip(".")[0:30]
 	short_title = ''.join([i if ord(i) < 128 else '?' for i in short_title]) #replace non-ascii for '?'
