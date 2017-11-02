@@ -130,9 +130,9 @@ def download_wallpaper(url, path):
 	if urllib.urlopen(url).getcode() == 200:
 		if not 'html' in urllib.urlopen(url).read():
 			urllib.urlretrieve(url, path)
-			return urllib.urlopen(url).getcode()
-
-
+	elif urllib.urlopen(url).getcode() == 403:
+		print "Forbidden access. Error 403"
+	return urllib.urlopen(url).getcode()
 
 def change_local_wallpaper(wallpaper_path):
 
@@ -161,6 +161,10 @@ def main():
 		sys.exit('supported subreddits: wallpapers, EarthPorn')
 
 	time = args.top	#time = 'day'
+
+	if time not in ["week", "all", "hour", "month", "year", "day"]:
+		sys.exit("--time must be one of: week, all, hour, month, year, day")
+
 	reddit = praw.Reddit('user_data')
 	limit=1
 
@@ -185,11 +189,12 @@ def main():
 		if 'html' in urllib.urlopen(url).read():
 			url = get_imgur_image_url(url)
 		
-	if download_wallpaper(str(url), wallpaper_path):
+	if download_wallpaper(str(url), wallpaper_path) == 200:
 		print "\nDownloaded \"" + short_title + "\" from " + str(url)
-
-	change_local_wallpaper(wallpaper_path)
-	print "Set \"" + short_title + "\" as wallpaper"
+		change_local_wallpaper(wallpaper_path)
+		print "Set \"" + short_title + "\" as wallpaper"
+	else:
+		print "Could not download image"
 
 
 
